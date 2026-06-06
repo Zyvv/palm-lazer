@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PALM GALAXY — lib/game/types.ts
+// PALM LAZER — lib/game/types.ts
 // File 12 of 48
 //
 // Single source of truth for all TypeScript types used across:
@@ -104,7 +104,7 @@ export interface RunStats {
   score:            number
   maxLevel:         number
   maxCity:          string
-  lasersDoged:      number
+  lazersDoged:      number
   livesLost:        number
 }
 
@@ -173,8 +173,8 @@ export type GameEventType =
   | 'game_start'
   | 'game_over'
   | 'level_up'
-  | 'laser_dodged'
-  | 'laser_hit'
+  | 'lazer_dodged'
+  | 'lazer_hit'
   | 'life_lost'
   | 'pause'
   | 'resume'
@@ -252,9 +252,9 @@ export interface RunSummary {
   final_score:          number
   max_level_reached:    number
   max_city_reached:     string
-  total_lasers_dodged:  number
+  total_lazers_dodged:  number
   total_lives_lost:     number
-  end_reason:           'laser_hit' | 'quit' | 'tab_closed'
+  end_reason:           'lazer_hit' | 'quit' | 'tab_closed'
 }
 
 export interface SessionEndResponse {
