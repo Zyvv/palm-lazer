@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PALM GALAXY — emails/GameInvite.tsx
+// PALM LAZER — emails/GameInvite.tsx
 // File 36 of 48
 //
 // Email 2 — Game Invite (viral share, sent when a player taps "Send to friend").
 //
 // Trigger: POST /api/share/email succeeds → Resend.send({ html: render(<GameInvite />) })
-// Subject: `{senderLabel} challenged you to Palm Galaxy 🌴⚡`
+// Subject: `{senderLabel} challenged you to Palm Lazer 🌴⚡`
 // Goal:    Convert one player's friend into a new player with full attribution.
 //          This is the viral loop. One send = one potential new session with
 //          utm_source='email_share' and the sender's session_id in utm_content.
@@ -55,28 +55,29 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface GameInviteProps {
-  /**
-   * Display name for the sender.
-   * Derived from their email prefix ("john" from "john@example.com"),
-   * or "A Palm Galaxy player" if no email was captured.
-   */
-  senderLabel:  string
   /** Sender's final score — the benchmark the recipient must beat */
-  score:        number
+  score:      number
   /** Zero-indexed level the sender reached (displayed as level + 1) */
-  level:        number
+  level:      number
   /** City the sender reached e.g. 'Miami', 'NYC', 'Dubai' */
-  city:         string
+  city:       string
+  /** Absolute base URL e.g. 'https://palmlazer.app' — no trailing slash */
+  appUrl:     string
+  /** App display name e.g. 'Palm Lazer' */
+  appName:    string
   /**
-   * Full invite URL with attribution UTMs.
+   * Full play URL with attribution UTMs for the recipient.
    * Built by /api/share/email: includes utm_source=email_share,
    * utm_content={sender_session_id} for full chain attribution.
    */
-  inviteUrl:    string
-  /** Absolute base URL e.g. 'https://palmgalaxy.app' — no trailing slash */
-  appUrl:       string
-  /** App display name e.g. 'Palm Galaxy' */
-  appName:      string
+  playUrl:    string
+  /** Secondary share link (e.g. public share page for this session) */
+  shareUrl:   string
+  /**
+   * Sender's email address for display ("john" from "john@example.com").
+   * undefined if sender did not capture email — falls back to generic label.
+   */
+  fromEmail:  string | undefined
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,14 +104,20 @@ function cityAccent(city: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function GameInvite({
-  senderLabel,
   score,
   level,
   city,
-  inviteUrl,
   appUrl,
   appName,
+  playUrl,
+  shareUrl,
+  fromEmail,
 }: GameInviteProps) {
+  // Derive display label from fromEmail, or fall back to generic
+  const senderLabel = fromEmail
+    ? fromEmail.split('@')[0]
+    : `A ${appName} player`
+
   const previewText =
     `${senderLabel} scored ${formatScore(score)} on ${appName}. Can you beat them?`
 
@@ -157,7 +164,7 @@ export function GameInvite({
           {/* ── Sender identity ──────────────────────────────────────── */}
           <Section style={styles.senderSection}>
             <Text style={styles.senderIntro}>
-              {senderLabel} just survived the lasers and scored:
+              {senderLabel} just survived the lazers and scored:
             </Text>
           </Section>
 
@@ -177,7 +184,7 @@ export function GameInvite({
           {/* ── Challenge copy ───────────────────────────────────────── */}
           <Section style={styles.bodySection}>
             <Text style={styles.bodyCopy}>
-              Dodge lasers across Miami, Tokyo, NYC, Dubai &amp; Ibiza.
+              Dodge lazers across Miami, Tokyo, NYC, Dubai &amp; Ibiza.
               <br />
               One mechanic. Zero mercy.
               <br />
@@ -193,7 +200,7 @@ export function GameInvite({
               </Text>
             )}
 
-            <Button href={inviteUrl} style={styles.ctaButton}>
+            <Button href={playUrl} style={styles.ctaButton}>
               ► ACCEPT THE CHALLENGE
             </Button>
           </Section>
@@ -234,6 +241,13 @@ export function GameInvite({
             <Text style={styles.hintSubText}>
               Free to play · No account required · Plays in your browser
             </Text>
+          </Section>
+
+          {/* ── Secondary share link ─────────────────────────────── */}
+          <Section style={styles.shareLinkSection}>
+            <Link href={shareUrl} style={styles.secondaryShareLink}>
+              VIEW SCORE PAGE →
+            </Link>
           </Section>
 
           {/* ── Footer ───────────────────────────────────────────────── */}
@@ -483,6 +497,19 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: '1.8',
     margin: 0,
     textAlign: 'center',
+  },
+  // ── Secondary share link ────────────────────────────────────────────────
+  shareLinkSection: {
+    padding: '0 32px 20px',
+    textAlign: 'center' as const,
+  },
+
+  secondaryShareLink: {
+    fontFamily: FONT_PIXEL,
+    color: '#333333',
+    fontSize: '7px',
+    letterSpacing: '1px',
+    textDecoration: 'none',
   },
 }
 
