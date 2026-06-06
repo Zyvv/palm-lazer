@@ -1,31 +1,48 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PALM GALAXY — app/api/session/event/route.ts
-// File 25 of 48
+// PALM LAZER — app/api/session/event/route.ts
+// File 40 of 48
 //
 // POST /api/session/event
 //
-// Receives a batch of GameEventPayload objects from useSession (500ms debounce,
-// max 20 events per batch). Bulk-inserts into game_events and updates
-// sessions.last_active_at. Also updates share flags on share_clicked events.
+// Receives batched GameEventPayload[] from the client (useSession hook,
+// 500ms debounce, max 20 events per batch). Bulk-inserts into game_events
+// and updates sessions.last_active_at. Handles share_clicked events by
+// setting the corresponding share flag columns on the session row.
 //
-// Rules:
-//   - Accepts sendBeacon payloads (Content-Type: text/plain with JSON body)
-//     in addition to application/json — browsers use sendBeacon on page unload
-//   - session_id is validated as a non-empty string; no UUID format check
-//     (avoids rejecting local_* fallback IDs from useSession)
-//   - Silently drops events with unrecognised event_type rather than 400ing —
-//     a bad event must never crash the batch
-//   - share_clicked events trigger a session UPDATE for share flags
-//   - Returns { inserted: N } — count of successfully inserted rows
+// Also accepts sendBeacon payloads (Content-Type: text/plain with JSON body)
+// so events are never lost on page unload.
+//
+// Runtime: edge
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
-import type {
-  SessionEventRequest,
-  SessionEventResponse,
-  GameEventPayload,
-} from '@/lib/game/types'
+import { createClient }              from '@supabase/supabase-js'
+
+export const runtime = 'edge'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface GameEventPayload {
+  event_type:             string
+  score?:                 number | null
+  level_number?:          number | null
+  city_name?:             string | null
+  lives_remaining?:       number | null
+  frame_number?:          number | null
+  palm_x_position?:       number | null
+  laser_side?:            string | null
+  laser_y?:               number | null
+  laser_speed?:           number | null
+  share_platform?:        string | null
+  share_recipient_email?: string | null
+}
+
+interface EventBatchBody {
+  session_id: string
+  events:     GameEventPayload[]
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALID EVENT TYPES — drop anything not in this set
@@ -35,8 +52,8 @@ const VALID_EVENT_TYPES = new Set([
   'game_start',
   'game_over',
   'level_up',
-  'laser_dodged',
-  'laser_hit',
+  'lazer_dodged',   // Palm Lazer spelling — always Lazer
+  'lazer_hit',
   'life_lost',
   'pause',
   'resume',
@@ -48,7 +65,7 @@ const VALID_EVENT_TYPES = new Set([
 ])
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SHARE FLAG MAP — which DB column to set true for each platform
+// SHARE FLAG MAP — which column to set true per platform
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SHARE_FLAG_MAP: Record<string, string> = {
@@ -59,19 +76,27 @@ const SHARE_FLAG_MAP: Record<string, string> = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BODY PARSER — handles both application/json and text/plain (sendBeacon)
+// SUPABASE CLIENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function parseBody(req: NextRequest): Promise<SessionEventRequest | null> {
-  try {
-    const contentType = req.headers.get('content-type') ?? ''
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Supabase env vars missing')
+  return createClient(url, key, { auth: { persistSession: false } })
+}
 
-    if (contentType.includes('application/json')) {
+// ─────────────────────────────────────────────────────────────────────────────
+// BODY PARSER — handles application/json AND text/plain (sendBeacon)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function parseBody(req: NextRequest): Promise<EventBatchBody | null> {
+  try {
+    const ct = req.headers.get('content-type') ?? ''
+    if (ct.includes('application/json')) {
       return await req.json()
     }
-
-    // sendBeacon sends Content-Type: text/plain; charset=UTF-8
-    // but body is still JSON-encoded
+    // sendBeacon sends text/plain but body is JSON-encoded
     const text = await req.text()
     return JSON.parse(text)
   } catch {
@@ -84,102 +109,96 @@ async function parseBody(req: NextRequest): Promise<SessionEventRequest | null> 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // ── Parse body ─────────────────────────────────────────────────────────────
+  // ── Parse ──────────────────────────────────────────────────────────────────
   const body = await parseBody(req)
 
   if (!body || typeof body.session_id !== 'string' || !body.session_id) {
-    return NextResponse.json(
-      { error: 'session_id is required' },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: 'session_id required' }, { status: 400 })
   }
 
   if (!Array.isArray(body.events) || body.events.length === 0) {
-    return NextResponse.json<SessionEventResponse>({ inserted: 0 })
+    return NextResponse.json({ inserted: 0 }, { status: 200 })
   }
 
   const { session_id, events } = body
 
-  // ── Sanitise and map events to DB rows ────────────────────────────────────
+  // ── Sanitise — drop invalid event types ───────────────────────────────────
+  const now  = new Date().toISOString()
   const rows = events
-    .filter((e: GameEventPayload) => VALID_EVENT_TYPES.has(e.event_type))
-    .map((e: GameEventPayload) => ({
+    .filter(e => typeof e.event_type === 'string' && VALID_EVENT_TYPES.has(e.event_type))
+    .map(e => ({
       session_id,
-      event_type:            e.event_type,
-      score:                 e.score                 ?? null,
-      level_number:          e.level_number          ?? null,
-      city_name:             e.city_name             ?? null,
-      lives_remaining:       e.lives_remaining       ?? null,
-      frame_number:          e.frame_number          ?? null,
-      palm_x_position:       e.palm_x_position       ?? null,
-      laser_side:            e.laser_side            ?? null,
-      laser_y:               e.laser_y               ?? null,
-      laser_speed:           e.laser_speed           ?? null,
-      share_platform:        e.share_platform        ?? null,
-      share_recipient_email: e.share_recipient_email ?? null,
-      occurred_at:           new Date().toISOString(),
+      event_type:             e.event_type,
+      score:                  e.score                  ?? null,
+      level_number:           e.level_number           ?? null,
+      city_name:              e.city_name              ?? null,
+      lives_remaining:        e.lives_remaining        ?? null,
+      frame_number:           e.frame_number           ?? null,
+      palm_x_position:        e.palm_x_position        ?? null,
+      laser_side:             e.laser_side             ?? null,
+      laser_y:                e.laser_y                ?? null,
+      laser_speed:            e.laser_speed            ?? null,
+      share_platform:         e.share_platform         ?? null,
+      share_recipient_email:  e.share_recipient_email  ?? null,
+      occurred_at:            now,
     }))
 
   if (rows.length === 0) {
-    return NextResponse.json<SessionEventResponse>({ inserted: 0 })
+    return NextResponse.json({ inserted: 0 }, { status: 200 })
   }
 
   try {
-    const supabase = createServerClient()
+    const supabase = getSupabase()
 
-    // ── Bulk insert events ──────────────────────────────────────────────────
+    // ── Bulk insert game_events ────────────────────────────────────────────
     const { error: insertError } = await supabase
       .from('game_events')
       .insert(rows)
 
     if (insertError) {
-      console.error('[session/event] Insert error:', insertError.message)
-      // Don't 500 — return partial success count as 0 and let game continue
-      return NextResponse.json<SessionEventResponse>({ inserted: 0 }, { status: 200 })
+      console.error('[session/event] insert error:', insertError.message)
+      // Return 200 — client must never crash on a telemetry failure
+      return NextResponse.json({ inserted: 0 }, { status: 200 })
     }
 
-    // ── Update last_active_at on the session ────────────────────────────────
-    // Fire-and-forget — don't await or fail the response on this
+    // ── Update last_active_at (fire-and-forget) ────────────────────────────
     supabase
       .from('sessions')
-      .update({ last_active_at: new Date().toISOString() })
+      .update({ last_active_at: now })
       .eq('id', session_id)
       .then(({ error }) => {
-        if (error) console.error('[session/event] last_active_at update error:', error.message)
+        if (error) console.error('[session/event] last_active_at error:', error.message)
       })
 
-    // ── Handle share_clicked events — update share flags ───────────────────
+    // ── Handle share_clicked — set share flag columns ──────────────────────
     const shareEvents = events.filter(
-      (e: GameEventPayload) => e.event_type === 'share_clicked' && e.share_platform,
+      e => e.event_type === 'share_clicked' && e.share_platform,
     )
 
     if (shareEvents.length > 0) {
-      // Collect all platforms clicked in this batch (could be multiple)
-      const flagUpdates: Record<string, boolean | string> = {
-        share_clicked_at: new Date().toISOString(),
+      const flagUpdate: Record<string, boolean | string> = {
+        share_clicked_at: now,
       }
-
-      shareEvents.forEach((e: GameEventPayload) => {
+      shareEvents.forEach(e => {
         const col = SHARE_FLAG_MAP[e.share_platform ?? '']
-        if (col) flagUpdates[col] = true
+        if (col) flagUpdate[col] = true
       })
 
-      // Fire-and-forget
       supabase
         .from('sessions')
-        .update(flagUpdates)
+        .update(flagUpdate)
         .eq('id', session_id)
         .then(({ error }) => {
-          if (error) console.error('[session/event] share flag update error:', error.message)
+          if (error) console.error('[session/event] share flag error:', error.message)
         })
     }
 
-    return NextResponse.json<SessionEventResponse>({ inserted: rows.length })
+    return NextResponse.json({ inserted: rows.length }, { status: 200 })
 
   } catch (err) {
-    console.error('[session/event] Unexpected error:', err)
-    // Silent 200 — a network failure must never crash the game client
-    return NextResponse.json<SessionEventResponse>({ inserted: 0 }, { status: 200 })
+    console.error('[session/event] unexpected error:', err)
+    // Always 200 — telemetry must never crash the game
+    return NextResponse.json({ inserted: 0 }, { status: 200 })
   }
 }
 
