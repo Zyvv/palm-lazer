@@ -32,22 +32,22 @@ interface PageProps {
 export async function generateMetadata({
   searchParams,
 }: PageProps): Promise<Metadata> {
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://palmgalaxy.app'
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://palmlazer.com'
 
   // If this is a share link, generate a personalised OG image
   if (searchParams.ref === 'share' && searchParams.sid) {
     const ogUrl = `${APP_URL}/api/og?sid=${searchParams.sid}`
     return {
-      title: 'Someone challenged you to Palm Galaxy 🌴⚡',
+      title: 'Someone challenged you to Palm Lazer 🌴⚡',
       description: 'A friend survived the lasers. Can you beat their score?',
       openGraph: {
-        title: 'Someone challenged you to Palm Galaxy 🌴⚡',
+        title: 'Someone challenged you to Palm Lazer 🌴⚡',
         description: 'A friend survived the lasers. Can you beat their score?',
         images: [{ url: ogUrl, width: 1200, height: 630 }],
       },
       twitter: {
         card: 'summary_large_image',
-        title: 'Someone challenged you to Palm Galaxy 🌴⚡',
+        title: 'Someone challenged you to Palm Lazer 🌴⚡',
         description: 'A friend survived the lasers. Can you beat their score?',
         images: [ogUrl],
       },
