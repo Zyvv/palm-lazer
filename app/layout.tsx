@@ -13,8 +13,8 @@ import './globals.css'
 // METADATA
 // ─────────────────────────────────────────────────────────────────────────────
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://palmgalaxy.app'
-const APP_NAME = 'Palm Galaxy'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://palmlazer.com'
+const APP_NAME = 'Palm Lazer'
 const DESCRIPTION = 'Dodge the lasers. Survive the city. A retro arcade game across Miami, Tokyo, NYC, Dubai & Ibiza.'
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     'neon arcade',
   ],
 
-  authors: [{ name: 'Palm Galaxy' }],
+  authors: [{ name: 'Palm Lazer' }],
 
   // ── Open Graph ────────────────────────────────────────────────────────────
   openGraph: {
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
         url: `${APP_URL}/api/og`,
         width: 1200,
         height: 630,
-        alt: 'Palm Galaxy — retro neon arcade game',
+        alt: 'Palm Lazer — retro neon arcade game',
         type: 'image/png',
       },
     ],
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     title: `${APP_NAME} 🌴⚡ — Dodge the Lasers`,
     description: DESCRIPTION,
     images: [`${APP_URL}/api/og`],
-    creator: '@palmgalaxy',
+    creator: '@palmlazer',
   },
 
   // ── Robots ────────────────────────────────────────────────────────────────
