@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PALM GALAXY — emails/ScoreCard.tsx
+// PALM LAZER — emails/ScoreCard.tsx
 // File 35 of 48
 //
 // Email 1 — Score Card (sent immediately after email capture at game over).
 //
 // Trigger: POST /api/email/capture succeeds
-// Subject: `Your Palm Galaxy score: {score} 🌴`
+// Subject: `Your Palm Lazer score: {score} 🌴`
 // Goal:    Deliver the score receipt, prime the play-again loop, surface
 //          the share CTA so email capture converts to viral spread.
 //
@@ -30,8 +30,8 @@
 //     score={4200}
 //     level={2}
 //     city="NYC"
-//     appUrl="https://palmgalaxy.app"
-//     appName="Palm Galaxy"
+//     appUrl="https://palmlazer.app"
+//     appName="Palm Lazer"
 //   />)
 //
 // Architecture rules:
@@ -64,18 +64,20 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ScoreCardProps {
-  /** Recipient email address — used to build attribution UTMs */
-  playerEmail: string
   /** Final score for this session */
-  score:       number
+  score:        number
   /** Zero-indexed level reached (displayed as level + 1) */
-  level:       number
+  level:        number
   /** City name string e.g. 'Miami', 'Tokyo', 'NYC', 'Dubai', 'Ibiza' */
-  city:        string
-  /** Absolute base URL e.g. 'https://palmgalaxy.app' — no trailing slash */
-  appUrl:      string
-  /** App display name e.g. 'Palm Galaxy' */
-  appName:     string
+  city:         string
+  /** Absolute base URL e.g. 'https://palmlazer.app' — no trailing slash */
+  appUrl:       string
+  /** App display name e.g. 'Palm Lazer' */
+  appName:      string
+  /** Full play-again URL (built by caller with UTMs + session ref) */
+  playAgainUrl: string
+  /** Full share URL (built by caller with UTMs + session ref) */
+  shareUrl:     string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,24 +105,14 @@ function cityAccent(city: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ScoreCard({
-  playerEmail,
   score,
   level,
   city,
   appUrl,
   appName,
+  playAgainUrl,
+  shareUrl,
 }: ScoreCardProps) {
-  const playAgainUrl =
-    `${appUrl}/?utm_source=email` +
-    `&utm_medium=email` +
-    `&utm_campaign=score_card` +
-    `&utm_content=${encodeURIComponent(playerEmail)}`
-
-  const shareUrl =
-    `${appUrl}/?utm_source=email` +
-    `&utm_medium=email` +
-    `&utm_campaign=score_card_share` +
-    `&utm_content=${encodeURIComponent(playerEmail)}`
 
   const previewText =
     `Your score: ${formatScore(score)} · ${city} · Level ${level + 1} 🌴`
@@ -171,7 +163,7 @@ export function ScoreCard({
           {/* ── Body copy + play again CTA ─────────────────────────────── */}
           <Section style={styles.bodySection}>
             <Text style={styles.bodyCopy}>
-              The lasers are still firing.
+              The lazers are still firing.
               <br />
               Can you go further?
             </Text>
@@ -206,7 +198,7 @@ export function ScoreCard({
               ))}
             </Row>
             <Text style={styles.citiesSub}>
-              5 CITIES · INFINITE LASERS
+              5 CITIES · INFINITE LAZERZ
             </Text>
           </Section>
 
