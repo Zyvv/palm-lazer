@@ -4,8 +4,6 @@
   "devCommand": "next dev",
   "installCommand": "npm install",
 
-  "regions": ["cdg1", "iad1"],
-
   "crons": [
     {
       "path": "/api/cron/daily-analysis",
