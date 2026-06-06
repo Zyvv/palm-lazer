@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PALM GALAXY — hooks/useSession.ts
+// PALM LAZER — hooks/useSession.ts
 // File 17 of 48
 //
 // Owns the full session lifecycle:
@@ -158,14 +158,19 @@ export function useSession({ utmData }: UseSessionOptions): UseSessionReturn {
 
     const body: SessionStartRequest = {
       fingerprint:   getBrowserFingerprint(),
-      screen_width:  window.screen.width,
-      screen_height: window.screen.height,
+      screen_w:      window.screen.width,
+      screen_h:      window.screen.height,
       referrer:      document.referrer || null,
       utm_source:    utmData.utm_source,
       utm_medium:    utmData.utm_medium,
       utm_campaign:  utmData.utm_campaign,
       utm_content:   utmData.utm_content,
       landing_url:   window.location.href,
+      device_type:   /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+      os:            navigator.platform ?? null,
+      browser:       navigator.userAgent.split(' ').pop() ?? null,
+      lang:          navigator.language ?? null,
+      tz:            Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
     }
 
     try {
@@ -316,7 +321,7 @@ export function makeLevelUpEvent(
 
 export function makeLaserDodgedEvent(state: GameState): GameEventPayload {
   return {
-    event_type:    'laser_dodged',
+    event_type:    'lazer_dodged',
     score:         state.score,
     level_number:  state.level,
     city_name:     state.currentRun.maxCity,
@@ -330,16 +335,16 @@ export function makeLaserHitEvent(state: GameState): GameEventPayload {
   // Most recent laser that was active — engine already tagged it inactive
   const hitLaser = state.lasers.find(l => !l.active)
   return {
-    event_type:      'laser_hit',
+    event_type:      'lazer_hit',
     score:           state.score,
     level_number:    state.level,
     city_name:       state.currentRun.maxCity,
     lives_remaining: state.lives,
     palm_x_position: Math.round(state.palmX),
     frame_number:    state.frame,
-    laser_side:      hitLaser?.side ?? undefined,
-    laser_y:         hitLaser ? Math.round(hitLaser.y) : undefined,
-    laser_speed:     hitLaser ? Math.abs(hitLaser.speed) : undefined,
+    lazer_side:      hitLaser?.side ?? undefined,
+    lazer_y:         hitLaser ? Math.round(hitLaser.y) : undefined,
+    lazer_speed:     hitLaser ? Math.abs(hitLaser.speed) : undefined,
   }
 }
 
