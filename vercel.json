@@ -1,0 +1,95 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+
+  "regions": ["cdg1", "iad1"],
+
+  "crons": [
+    {
+      "path": "/api/cron/daily-analysis",
+      "schedule": "0 3 * * *"
+    }
+  ],
+
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://palmlazer.com"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, x-session-id"
+        }
+      ]
+    },
+    {
+      "source": "/api/og",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=3600"
+        }
+      ]
+    },
+    {
+      "source": "/api/session/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+
+  "rewrites": [
+    {
+      "source": "/share/:shareId",
+      "destination": "/?ref=share&sid=:shareId"
+    }
+  ],
+
+  "functions": {
+    "app/api/session/start/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/session/event/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/session/end/route.ts": {
+      "maxDuration": 15
+    },
+    "app/api/email/capture/route.ts": {
+      "maxDuration": 15
+    },
+    "app/api/share/email/route.ts": {
+      "maxDuration": 15
+    },
+    "app/api/intelligence/batch/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/cron/daily-analysis/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/webhooks/resend/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/og/route.ts": {
+      "maxDuration": 10
+    }
+  },
+
+  "env": {
+    "NEXT_PUBLIC_APP_NAME": "Palm Lazer",
+    "NEXT_PUBLIC_PRODUCT_SOURCE": "palm_lazer"
+  }
+}

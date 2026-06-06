@@ -1,0 +1,753 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PALM GALAXY — globals.css
+   File 9 of 48
+   
+   Base styles, CSS variables, Tailwind directives, and global utility classes.
+   Neon arcade aesthetic: dark voids, glowing neons, pixel font texture.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CSS CUSTOM PROPERTIES — Design tokens referenced throughout the app
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ── Core palette ─────────────────────────────────────────────────── */
+  --color-void:     #05050f;
+  --color-deep:     #0a0a1e;
+  --color-surface:  #0d0d22;
+  --color-border:   #1a1a3a;
+
+  /* ── Neon accents ─────────────────────────────────────────────────── */
+  --color-green:    #00ff88;
+  --color-magenta:  #ff00ff;
+  --color-cyan:     #00eeff;
+  --color-yellow:   #ffff00;
+  --color-pink:     #ff3aff;
+  --color-orange:   #ff6600;
+  --color-gold:     #ffaa00;
+  --color-red:      #ff1a1a;
+
+  /* ── Glow shadows ─────────────────────────────────────────────────── */
+  --glow-green:     0 0 8px #00ff88, 0 0 20px #00ff88, 0 0 40px #00ff8844;
+  --glow-magenta:   0 0 8px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff44;
+  --glow-cyan:      0 0 8px #00eeff, 0 0 20px #00eeff, 0 0 40px #00eeff44;
+  --glow-yellow:    0 0 8px #ffff00, 0 0 20px #ffff00, 0 0 40px #ffff0044;
+  --glow-pink:      0 0 8px #ff3aff, 0 0 20px #ff3aff, 0 0 40px #ff3aff44;
+
+  /* ── Text shadows ─────────────────────────────────────────────────── */
+  --text-glow-green:    0 0 8px #00ff88, 0 0 20px #00ff88;
+  --text-glow-magenta:  0 0 8px #ff00ff, 0 0 20px #ff00ff;
+  --text-glow-cyan:     0 0 8px #00eeff, 0 0 20px #00eeff;
+  --text-glow-yellow:   0 0 8px #ffff00, 0 0 20px #ffff00;
+  --text-glow-pink:     0 0 8px #ff3aff, 0 0 20px #ff3aff;
+
+  /* ── Typography ───────────────────────────────────────────────────── */
+  --font-pixel:     'Press Start 2P', monospace;
+  --font-orbitron:  'Orbitron', sans-serif;
+
+  /* ── Timing ───────────────────────────────────────────────────────── */
+  --transition-fast:   0.1s ease;
+  --transition-base:   0.2s ease;
+  --transition-slow:   0.4s ease;
+
+  /* ── Layout ───────────────────────────────────────────────────────── */
+  --canvas-max-width:  640px;
+  --hud-height:        56px;
+  --border-radius-game: 8px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESET & BASE
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    height: 100%;
+    /* Prevent layout shift from scrollbar appearing */
+    scrollbar-gutter: stable;
+    /* Prevent tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent text size adjustment on orientation change */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    background-color: var(--color-void);
+    color: var(--color-green);
+    font-family: var(--font-pixel);
+    line-height: 1.6;
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+    /* Smooth font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Subtle scanline texture on body */
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+  }
+
+  /* Focus styles — visible for accessibility, styled to match neon aesthetic */
+  :focus-visible {
+    outline: 2px solid var(--color-green);
+    outline-offset: 2px;
+    box-shadow: var(--glow-green);
+  }
+
+  /* Remove default focus ring for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: #00ff8833;
+    color: var(--color-green);
+  }
+
+  /* Scrollbar styling — webkit */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-void);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-green);
+    border-radius: 3px;
+    box-shadow: var(--glow-green);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00ffaa;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-green) var(--color-void);
+  }
+
+  /* Links */
+  a {
+    color: var(--color-cyan);
+    text-decoration: none;
+    transition: color var(--transition-base), text-shadow var(--transition-base);
+  }
+  a:hover {
+    color: var(--color-green);
+    text-shadow: var(--text-glow-green);
+  }
+
+  /* Images */
+  img,
+  video {
+    max-width: 100%;
+    display: block;
+  }
+
+  /* Buttons reset */
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+    color: inherit;
+  }
+
+  /* Input reset */
+  input,
+  textarea {
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    outline: none;
+  }
+
+  /* Headings inherit pixel font */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-pixel);
+    line-height: 1.4;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   COMPONENT LAYER — reusable Palm Galaxy UI primitives
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* ── Game container ───────────────────────────────────────────────── */
+  .game-wrap {
+    position: relative;
+    width: 100%;
+    max-width: var(--canvas-max-width);
+    margin: 0 auto;
+    background: #000;
+    border-radius: var(--border-radius-game);
+    overflow: hidden;
+    /* Neon border */
+    border: 1px solid #00ff8833;
+    box-shadow: 0 0 0 1px #00ff8811, 0 0 40px #00ff8822, 0 0 80px #00ff8811;
+  }
+
+  /* ── Game canvas ──────────────────────────────────────────────────── */
+  .game-canvas {
+    display: block;
+    width: 100%;
+    height: 560px;
+    /* Prevent canvas blur on retina */
+    image-rendering: pixelated;
+  }
+
+  /* ── HUD overlay ──────────────────────────────────────────────────── */
+  .hud-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* ── Scanline effect ──────────────────────────────────────────────── */
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.12) 2px,
+      rgba(0, 0, 0, 0.12) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+    border-radius: var(--border-radius-game);
+    /* Subtle CRT vignette */
+    mask-image: radial-gradient(ellipse at center, black 60%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 60%, transparent 100%);
+  }
+
+  /* ── Overlay panel (start / game over) ───────────────────────────── */
+  .game-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(2px);
+    pointer-events: all;
+    z-index: 20;
+    padding: 24px;
+    gap: 12px;
+  }
+
+  /* ── Neon button ──────────────────────────────────────────────────── */
+  .btn-neon {
+    font-family: var(--font-pixel);
+    background: none;
+    border: 2px solid var(--color-green);
+    color: var(--color-green);
+    padding: 10px 24px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-shadow: var(--text-glow-green);
+    box-shadow: 0 0 16px #00ff88, 0 0 40px #00ff8844;
+    border-radius: 0;
+    transition:
+      background var(--transition-fast),
+      box-shadow var(--transition-fast),
+      transform var(--transition-fast);
+  }
+  .btn-neon:hover {
+    background: #00ff8822;
+    box-shadow: 0 0 30px #00ff88, 0 0 60px #00ff8866;
+    transform: translateY(-1px);
+  }
+  .btn-neon:active {
+    transform: translateY(0);
+    box-shadow: 0 0 10px #00ff88;
+  }
+
+  /* ── Neon button variants ─────────────────────────────────────────── */
+  .btn-neon-magenta {
+    border-color: var(--color-magenta);
+    color: var(--color-magenta);
+    text-shadow: var(--text-glow-magenta);
+    box-shadow: 0 0 16px #ff00ff, 0 0 40px #ff00ff44;
+  }
+  .btn-neon-magenta:hover {
+    background: #ff00ff22;
+    box-shadow: 0 0 30px #ff00ff, 0 0 60px #ff00ff66;
+  }
+
+  .btn-neon-cyan {
+    border-color: var(--color-cyan);
+    color: var(--color-cyan);
+    text-shadow: var(--text-glow-cyan);
+    box-shadow: 0 0 16px #00eeff, 0 0 40px #00eeff44;
+  }
+  .btn-neon-cyan:hover {
+    background: #00eeff22;
+    box-shadow: 0 0 30px #00eeff, 0 0 60px #00eeff66;
+  }
+
+  /* ── Input neon ───────────────────────────────────────────────────── */
+  .input-neon {
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    letter-spacing: 1px;
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid #00ff8866;
+    border-radius: 0;
+    color: var(--color-green);
+    padding: 10px 14px;
+    width: 100%;
+    transition:
+      border-color var(--transition-base),
+      box-shadow var(--transition-base);
+    /* Remove webkit autofill styling */
+    -webkit-text-fill-color: var(--color-green);
+  }
+  .input-neon::placeholder {
+    color: #00ff8866;
+  }
+  .input-neon:focus {
+    border-color: var(--color-green);
+    box-shadow: 0 0 12px #00ff8844, inset 0 0 8px #00ff8811;
+    outline: none;
+  }
+  .input-neon:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* ── Pixel heading ────────────────────────────────────────────────── */
+  .heading-pixel {
+    font-family: var(--font-pixel);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .heading-pixel-green {
+    color: var(--color-green);
+    text-shadow: var(--text-glow-green);
+  }
+  .heading-pixel-magenta {
+    color: var(--color-magenta);
+    text-shadow: var(--text-glow-magenta);
+  }
+  .heading-pixel-cyan {
+    color: var(--color-cyan);
+    text-shadow: var(--text-glow-cyan);
+  }
+
+  /* ── Orbitron city label ──────────────────────────────────────────── */
+  .city-label {
+    font-family: var(--font-orbitron);
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+    text-shadow: var(--text-glow-cyan);
+  }
+
+  /* ── Score card ───────────────────────────────────────────────────── */
+  .score-card {
+    font-family: var(--font-pixel);
+    font-size: 10px;
+    color: var(--color-yellow);
+    text-shadow: var(--text-glow-yellow);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  /* ── HUD stat label ───────────────────────────────────────────────── */
+  .hud-stat {
+    position: absolute;
+    font-family: var(--font-pixel);
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .hud-stat-score {
+    top: 12px;
+    left: 16px;
+    color: var(--color-green);
+    text-shadow: var(--text-glow-green);
+  }
+  .hud-stat-level {
+    top: 12px;
+    right: 16px;
+    color: var(--color-magenta);
+    text-shadow: var(--text-glow-magenta);
+  }
+  .hud-stat-lives {
+    top: 30px;
+    left: 16px;
+    color: var(--color-yellow);
+    text-shadow: var(--text-glow-yellow);
+    font-size: 8px;
+  }
+
+  /* ── Share button bar ─────────────────────────────────────────────── */
+  .share-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Neon divider ─────────────────────────────────────────────────── */
+  .neon-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-green),
+      transparent
+    );
+    box-shadow: 0 0 6px var(--color-green);
+  }
+
+  /* ── Control hint text ────────────────────────────────────────────── */
+  .ctrl-hint {
+    font-family: var(--font-pixel);
+    font-size: 7px;
+    color: #666;
+    text-align: center;
+    line-height: 2.2;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Loading spinner ──────────────────────────────────────────────── */
+  .spinner-neon {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #00ff8833;
+    border-top-color: var(--color-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* ── Toast notification ───────────────────────────────────────────── */
+  .toast-neon {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--color-green);
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid var(--color-green);
+    padding: 10px 18px;
+    text-shadow: var(--text-glow-green);
+    box-shadow: var(--glow-green);
+    white-space: nowrap;
+    z-index: 100;
+    animation: toast-in 0.2s ease-out, toast-out 0.2s ease-in 2.8s forwards;
+  }
+
+  /* ── Modal ────────────────────────────────────────────────────────── */
+  .modal-neon {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    padding: 16px;
+  }
+  .modal-neon-panel {
+    background: var(--color-deep);
+    border: 1px solid #00ff8844;
+    box-shadow: 0 0 40px #00ff8822, 0 0 80px #00ff8811;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: fadeup 0.3s ease-out;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   UTILITY LAYER — one-off helpers not covered by Tailwind
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+
+  /* ── Glow utilities ───────────────────────────────────────────────── */
+  .glow-green   { box-shadow: var(--glow-green); }
+  .glow-magenta { box-shadow: var(--glow-magenta); }
+  .glow-cyan    { box-shadow: var(--glow-cyan); }
+  .glow-yellow  { box-shadow: var(--glow-yellow); }
+  .glow-pink    { box-shadow: var(--glow-pink); }
+
+  /* ── Text glow utilities ──────────────────────────────────────────── */
+  .text-glow-green   { text-shadow: var(--text-glow-green); }
+  .text-glow-magenta { text-shadow: var(--text-glow-magenta); }
+  .text-glow-cyan    { text-shadow: var(--text-glow-cyan); }
+  .text-glow-yellow  { text-shadow: var(--text-glow-yellow); }
+  .text-glow-pink    { text-shadow: var(--text-glow-pink); }
+
+  /* ── No select ────────────────────────────────────────────────────── */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* ── Full bleed ───────────────────────────────────────────────────── */
+  .full-bleed {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+  }
+
+  /* ── Pixel crisp ──────────────────────────────────────────────────── */
+  .pixel-crisp {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* ── Animate flicker ──────────────────────────────────────────────── */
+  .animate-flicker {
+    animation: flicker 4s infinite;
+  }
+
+  /* ── Neon border gradient ─────────────────────────────────────────── */
+  .border-neon-gradient {
+    position: relative;
+  }
+  .border-neon-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--color-green), var(--color-magenta), var(--color-cyan));
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ── Responsive game height ───────────────────────────────────────── */
+  .game-height {
+    height: 560px;
+  }
+  @media (max-width: 480px) {
+    .game-height {
+      height: 480px;
+    }
+  }
+  @media (max-width: 375px) {
+    .game-height {
+      height: 420px;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   KEYFRAME ANIMATIONS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes flicker {
+  0%, 100%  { opacity: 1; }
+  41%       { opacity: 1; }
+  42%       { opacity: 0.7; }
+  43%       { opacity: 1; }
+  45%       { opacity: 0.5; }
+  46%       { opacity: 1; }
+}
+
+@keyframes pulseglow {
+  0%, 100% { text-shadow: 0 0 8px #00ff88; }
+  50%      { text-shadow: 0 0 24px #00ff88, 0 0 48px #00ff88; }
+}
+
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes fadeup {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadedown {
+  0%   { opacity: 0; transform: translateY(-12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes levelup {
+  0%   { opacity: 0; transform: scale(0.8) translateY(-20px); }
+  20%  { opacity: 1; transform: scale(1.1) translateY(0); }
+  80%  { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.95) translateY(-10px); }
+}
+
+@keyframes hitflash {
+  0%, 100% { filter: none; }
+  50%      { filter: brightness(3) saturate(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(12px); }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: #00ff8866; box-shadow: 0 0 8px #00ff8822; }
+  50%      { border-color: #00ff88cc; box-shadow: 0 0 20px #00ff8866; }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes zap {
+  0%, 100% { opacity: 1; }
+  25%      { opacity: 0.3; }
+  50%      { opacity: 1; }
+  75%      { opacity: 0.6; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAGE-LEVEL LAYOUT
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Full viewport game page */
+.page-game {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--color-void);
+  /* Subtle radial spotlight on game area */
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 50%, #0a0a2e 0%, var(--color-void) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+}
+
+/* Header bar above game */
+.page-header {
+  width: 100%;
+  max-width: var(--canvas-max-width);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 12px;
+  font-family: var(--font-orbitron);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--color-green);
+  text-shadow: var(--text-glow-green);
+}
+
+/* Footer bar below game */
+.page-footer {
+  width: 100%;
+  max-width: var(--canvas-max-width);
+  padding: 10px 4px 0;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: #444;
+  text-align: center;
+  letter-spacing: 0.5px;
+  line-height: 2;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CITY THEME OVERRIDES
+   City-specific neon palettes applied via data attributes or class names.
+   JS sets data-city="miami" on game-wrap; CSS vars cascade in.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+[data-city="miami"] {
+  --city-accent:  #ff3aff;
+  --city-accent2: #00ffee;
+}
+[data-city="tokyo"] {
+  --city-accent:  #ff006a;
+  --city-accent2: #00aaff;
+}
+[data-city="nyc"] {
+  --city-accent:  #ffcc00;
+  --city-accent2: #ff4400;
+}
+[data-city="dubai"] {
+  --city-accent:  #ffaa00;
+  --city-accent2: #ff6600;
+}
+[data-city="ibiza"] {
+  --city-accent:  #ff00aa;
+  --city-accent2: #aa00ff;
+}
+[data-city="paris"] {
+  --city-accent:  #ffffff;
+  --city-accent2: #cc88ff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   REDUCED MOTION
+   ───────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
